@@ -7,9 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
@@ -170,7 +167,7 @@ fun Tab(
                 text()
                 Spacer(Modifier.width(4.dp))
                 IconButton(onClick = close, modifier = Modifier.size(16.dp)) {
-                    Icon(Icons.Default.Close, contentDescription = "Close")
+                    Text("x")
                 }
             }
         }

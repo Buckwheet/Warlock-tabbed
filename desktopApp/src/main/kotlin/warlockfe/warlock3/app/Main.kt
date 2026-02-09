@@ -549,7 +549,7 @@ private class WarlockCommand : CliktCommand() {
 @OptIn(ExperimentalResourceApi::class)
 fun main(args: Array<String>) = WarlockCommand().versionOption(version ?: "Development").main(args)
 
-private fun GameState.getTitle(): Flow<String> {
+internal fun GameState.getTitle(): Flow<String> {
     return when (val screen = this.screen) {
         GameScreen.Dashboard ->
             flow { emit("Dashboard") }
