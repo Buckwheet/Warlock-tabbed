@@ -1,4 +1,4 @@
-name: Build
+name: Build and Package
 
 on:
   push:
@@ -8,7 +8,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
@@ -23,7 +26,21 @@ jobs:
       uses: gradle/actions/setup-gradle@v3
 
     - name: Grant execute permission for gradlew
+      if: runner.os != 'Windows'
       run: chmod +x gradlew
 
     - name: Build with Gradle
+      # Use bash shell to consistently run ./gradlew on all platforms
+      shell: bash
       run: ./gradlew build
+
+    - name: Package Distribution
+      shell: bash
+      # packageDistributionForCurrentOS creates the native installer/executable
+      run: ./gradlew packageDistributionForCurrentOS
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Warlock-Distribution-${{ matrix.os }}
+        path: desktopApp/build/compose/binaries/main/**
