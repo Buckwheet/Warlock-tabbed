@@ -437,71 +437,105 @@ private class WarlockCommand : CliktCommand() {
                             }
                         }
 
-                        games.forEachIndexed { index, gameState ->
-                            val windowState = remember {
-                                WindowState(
-                                    width = initialWidth.dp,
-                                    height = initialHeight.dp,
-                                    position = position
-                                )
+                        var activeGame by remember { mutableStateOf<GameState?>(null) }
+                        
+                        // Ensure there is at least one game or set active game
+                        LaunchedEffect(games.size) {
+                            if (games.isEmpty()) {
+                                // If all games are closed, close the app? Or just show a "New Game" screen?
+                                // Illthorn behavior: usually keeps one open or closes app.
+                                // Let's exit if no games.
+                                exitApplication()
+                            } else if (activeGame == null || !games.contains(activeGame)) {
+                                activeGame = games.lastOrNull()
                             }
-                            val subtitle by gameState.getTitle().collectAsState("loading")
-                            val title = "Warlock - $subtitle"
-                            // app.dir is set when packaged to point at our collected inputs.
-                            val appIcon = remember {
-                                System.getProperty("app.dir")
-                                    ?.let { Paths.get(it, "icon-512.png") }
-                                    ?.takeIf { it.exists() }
-                                    ?.inputStream()
-                                    ?.use { BitmapPainter(it.readAllBytes().decodeToImageBitmap()) }
-                            }
-                            DecoratedWindow(
-                                title = title,
-                                state = windowState,
-                                icon = appIcon,
-                                onCloseRequest = {
-                                    scope.launch {
-                                        val game = games[index]
+                        }
+
+                        val windowState = remember {
+                            WindowState(
+                                width = initialWidth.dp,
+                                height = initialHeight.dp,
+                                position = position
+                            )
+                        }
+                        
+                        // Title based on active game
+                        val subtitle by activeGame?.getTitle()?.collectAsState("loading") ?: remember { mutableStateOf("Warlock") }
+                        val title = "Warlock - $subtitle"
+
+                        // app.dir is set when packaged to point at our collected inputs.
+                        val appIcon = remember {
+                            System.getProperty("app.dir")
+                                ?.let { Paths.get(it, "icon-512.png") }
+                                ?.takeIf { it.exists() }
+                                ?.inputStream()
+                                ?.use { BitmapPainter(it.readAllBytes().decodeToImageBitmap()) }
+                        }
+                        
+                        DecoratedWindow(
+                            title = title,
+                            state = windowState,
+                            icon = appIcon,
+                            onCloseRequest = {
+                                // Close all connections before exiting
+                                scope.launch {
+                                    games.forEach { game ->
                                         val screen = game.screen
                                         if (screen is GameScreen.ConnectedGameState) {
                                             screen.viewModel.close()
                                         }
-                                        games.removeAt(index)
-                                        if (games.isEmpty()) {
-                                            exitApplication()
-                                        }
                                     }
-                                },
+                                    exitApplication()
+                                }
+                            },
+                        ) {
+                            window.minimumSize = Dimension(240, 240)
+                            CompositionLocalProvider(
+                                LocalWindowComponent provides window,
                             ) {
-                                window.minimumSize = Dimension(240, 240)
-                                CompositionLocalProvider(
-                                    LocalWindowComponent provides window,
-                                ) {
+                                if (activeGame != null) {
                                     WarlockApp(
                                         title = title,
                                         appContainer = appContainer,
-                                        gameState = gameState,
-                                        openNewWindow = {
-                                            games.add(GameState())
+                                        backgroundGames = games,
+                                        activeGame = activeGame!!,
+                                        onGameSelected = { activeGame = it },
+                                        onGameClosed = { game -> 
+                                            scope.launch {
+                                                val screen = game.screen
+                                                if (screen is GameScreen.ConnectedGameState) {
+                                                    screen.viewModel.close()
+                                                }
+                                                games.remove(game)
+                                                if (games.isEmpty()) {
+                                                    exitApplication()
+                                                }
+                                            }
+                                        },
+                                        onNewGame = {
+                                            val newGame = GameState()
+                                            games.add(newGame)
+                                            activeGame = newGame
                                         },
                                         showUpdateDialog = { showUpdateDialog = true },
                                         sgeSettings = sgeSettings,
                                     )
-                                    LaunchedEffect(windowState) {
-                                        snapshotFlow { windowState.size }
-                                            .debounce(2.seconds)
-                                            .onEach { size ->
-                                                val width = size.width.value.toInt()
-                                                if (width >= 240) {
-                                                    clientSettings.putWidth(width)
-                                                }
-                                                val height = size.height.value.toInt()
-                                                if (height >= 240) {
-                                                    clientSettings.putHeight(height)
-                                                }
+                                }
+                                
+                                LaunchedEffect(windowState) {
+                                    snapshotFlow { windowState.size }
+                                        .debounce(2.seconds)
+                                        .onEach { size ->
+                                            val width = size.width.value.toInt()
+                                            if (width >= 240) {
+                                                clientSettings.putWidth(width)
                                             }
-                                            .launchIn(this)
-                                    }
+                                            val height = size.height.value.toInt()
+                                            if (height >= 240) {
+                                                clientSettings.putHeight(height)
+                                            }
+                                        }
+                                        .launchIn(this)
                                 }
                             }
                         }

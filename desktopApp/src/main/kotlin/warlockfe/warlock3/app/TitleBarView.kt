@@ -110,7 +110,7 @@ internal fun DecoratedWindowScope.TitleBarView(
                                 selected = false,
                                 onClick = openNewWindow,
                             ) {
-                                Text("New window")
+                                Text("New tab")
                             }
                             selectableItem(
                                 selected = false,
