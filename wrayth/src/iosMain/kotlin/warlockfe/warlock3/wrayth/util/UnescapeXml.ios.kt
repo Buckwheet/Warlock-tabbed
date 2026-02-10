@@ -13,9 +13,9 @@ import platform.UIKit.create
 
 @OptIn(BetaInteropApi::class, ExperimentalForeignApi::class)
 actual fun unescapeXml(text: String): String {
-    val nsString = NSString.create(text)
-    val data = nsString.dataUsingEncoding(NSUTF8StringEncoding)
+    val nsString = NSString.create(string = text)
+    val data = nsString?.dataUsingEncoding(NSUTF8StringEncoding) ?: return text
     val options = mapOf<Any?, Any>(NSDocumentTypeDocumentAttribute to NSHTMLTextDocumentType!!)
-    val attributedString = NSAttributedString.create(data = data!!, options = options, documentAttributes = null, error = null)
-    return attributedString!!.string()
+    val attributedString = NSAttributedString.create(data = data, options = options, documentAttributes = null, error = null)
+    return attributedString?.string() ?: text
 }
