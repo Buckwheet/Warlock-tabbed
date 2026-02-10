@@ -29,7 +29,7 @@ class MacroRepository(
     }
 
     fun observeCharacterMacros(characterId: String): Flow<List<MacroCommand>> {
-        assert(characterId != "global")
+        check(characterId != "global")
         return macroDao
             .observeByCharacterWithGlobals(characterId)
             .map { list ->
@@ -38,7 +38,7 @@ class MacroRepository(
     }
 
     fun observeOnlyCharacterMacros(characterId: String): Flow<List<MacroCommand>> {
-        assert(characterId != "global")
+        check(characterId != "global")
         return macroDao
             .observeByCharacter(characterId)
             .map { list ->
